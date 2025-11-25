@@ -34,4 +34,8 @@ public class ThresholdRepo {
     public Threshold getDefaultThreshold() {
         return this.defaultThreshold;
     }
+
+    public void updateDefaultThreshold(Threshold threshold) {
+        this.defaultThreshold = threshold;
+    }
 }

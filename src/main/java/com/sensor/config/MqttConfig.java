@@ -19,6 +19,10 @@ import java.util.UUID;
 
 /**
  * MQTT配置类（匹配规范2、3、5章：连接参数、主题、QoS、保留消息）
+ *
+ * 提供入站/出站通道与适配器配置：
+ * - 入站：订阅设备上报主题，将消息转交业务处理
+ * - 出站：发布设备控制指令，支持QoS与Retain设置
  */
 @Configuration
 public class MqttConfig {

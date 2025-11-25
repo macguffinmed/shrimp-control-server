@@ -30,6 +30,7 @@ public class ThresholdConfig {
 
     /**
      * 项目启动时初始化默认阈值（PostConstruct：Bean初始化后执行）
+     * 来源于 application.properties 的四个阈值配置项。
      */
     @PostConstruct
     public void initDefaultThreshold() {

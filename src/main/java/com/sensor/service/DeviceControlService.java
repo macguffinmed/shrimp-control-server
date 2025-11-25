@@ -42,6 +42,11 @@ public class DeviceControlService {
 
     /**
      * 控制设备开关（核心逻辑：阈值比对）
+     *
+     * 规则：
+     * - 温度或氧气超出阈值范围 → 停止设备（device_status=0）
+     * - 否则启动设备（device_status=1）
+     * 发送成功后记录到 device_control_log 以备查询。
      * @param deviceId 设备ID
      * @param sensorData 设备上传的实时数据（含温度、氧气值）
      * @param threshold 温度、氧气值阈值（用于比对）
@@ -116,5 +121,17 @@ public class DeviceControlService {
         } catch (Exception e) {
             logger.error("设备控制指令发送失败：主题={}，指令={}", topic, controlJson, e);
         }
+    }
+
+    /**
+     * 手动控制入口：供前端直接触发设备开/停
+     * @param deviceId 设备ID
+     * @param deviceStatus 1=启动，0=停止
+     */
+    public void manualControl(String deviceId, int deviceStatus) {
+        DeviceControlCommand controlMsg = new DeviceControlCommand(deviceId, deviceStatus);
+        String controlJson = JSON.toJSONString(controlMsg);
+        String publishTopic = publishTopicTemplate;
+        sendControlMsg(publishTopic, controlJson, deviceStatus, deviceId, null);
     }
 }

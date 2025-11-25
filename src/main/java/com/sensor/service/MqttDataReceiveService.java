@@ -5,8 +5,12 @@ import com.alibaba.fastjson.JSONException;
 import com.sensor.entity.SensorDataLog;
 import com.sensor.entity.SensorUploadData;
 import com.sensor.entity.Threshold;
+import com.sensor.entity.Device;
+import com.sensor.entity.RegionConfig;
 import com.sensor.repository.SensorDataLogRepository;
 import com.sensor.repository.ThresholdRepo;
+import com.sensor.repository.DeviceRepository;
+import com.sensor.repository.RegionConfigRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +39,19 @@ public class MqttDataReceiveService {
     // 注入阈值存储库（获取比对用的阈值）
     @Autowired
     private ThresholdRepo thresholdRepo;
+    @Autowired
+    private DeviceRepository deviceRepository;
+    @Autowired
+    private RegionConfigRepository regionConfigRepository;
 
     /**
      * 处理传感器上传数据
+     *
+     * 流程：
+     * 1) 解析JSON（必要时修复格式）并校验device_id
+     * 2) 持久化到 sensor_data_log（保存原始数据与主要指标）
+     * 3) 根据设备/区域/全局优先级选择阈值
+     * 4) 调用设备控制服务进行开停判定并发送指令
      * @param topic 订阅的主题（格式：devices/data/upload）
      * @param payload 设备上传的JSON数据（匹配规范4.1）
      */
@@ -80,8 +94,30 @@ public class MqttDataReceiveService {
             logger.info("传感器数据保存成功，日志ID: {}", savedLog.getId());
 
             // 步骤5：触发设备控制逻辑（调用设备控制服务）
-            Threshold currentThreshold = thresholdRepo.getDefaultThreshold(); // 获取当前阈值
-            logger.debug("获取当前阈值: {}", currentThreshold);
+            Device device = deviceRepository.findById(deviceId).orElseGet(() -> {
+                Device d = new Device();
+                d.setDeviceId(deviceId);
+                return deviceRepository.save(d);
+            });
+            device.setLastSeen(ZonedDateTime.now(ZoneId.of("UTC+8")));
+            deviceRepository.save(device);
+
+            Threshold currentThreshold;
+            if (device.getConfigPriority() != null && device.getConfigPriority().equalsIgnoreCase("DEVICE")
+                    && device.getTempMin() != null && device.getTempMax() != null
+                    && device.getOxyMin() != null && device.getOxyMax() != null) {
+                currentThreshold = new Threshold(device.getTempMin(), device.getTempMax(), device.getOxyMin(), device.getOxyMax());
+            } else if (device.getConfigPriority() != null && device.getConfigPriority().equalsIgnoreCase("REGION")
+                    && device.getRegion() != null) {
+                RegionConfig rc = regionConfigRepository.findById(device.getRegion()).orElse(null);
+                if (rc != null) {
+                    currentThreshold = new Threshold(rc.getTempMin(), rc.getTempMax(), rc.getOxyMin(), rc.getOxyMax());
+                } else {
+                    currentThreshold = thresholdRepo.getDefaultThreshold();
+                }
+            } else {
+                currentThreshold = thresholdRepo.getDefaultThreshold();
+            }
             deviceControlService.controlDevice(deviceId, sensorData, currentThreshold, savedLog.getId());
             logger.info("设备控制逻辑处理完成，设备ID: {}", deviceId);
         } catch (Exception e) {
@@ -90,7 +126,7 @@ public class MqttDataReceiveService {
     }
 
     /**
-     * 修复不规范的JSON格式，主要是处理device_id等字符串字段未加引号的问题
+     * 修复不规范的JSON格式（例如 device_id 未加引号）
      * @param payload 原始JSON字符串
      * @return 修复后的JSON字符串
      */

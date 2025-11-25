@@ -4,13 +4,13 @@ package com.sensor.entity;
  * 阈值配置实体（记录温度、氧气值上下限，用于比对逻辑）
  */
 public class Threshold {
-    // 温度最小值（℃）
+    /** 温度最小值（℃） */
     private Double tempMin;
-    // 温度最大值（℃）
+    /** 温度最大值（℃） */
     private Double tempMax;
-    // 氧气浓度最小值（mg/L）
+    /** 氧气浓度最小值（mg/L） */
     private Double oxyMin;
-    // 氧气浓度最大值（mg/L）
+    /** 氧气浓度最大值（mg/L） */
     private Double oxyMax;
 
     // 构造方法

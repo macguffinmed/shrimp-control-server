@@ -21,6 +21,7 @@ public class MqttInboundMessageHandler {
 
     /**
      * 处理从 mqttInboundChannel 收到的消息。
+     * @param message Spring Integration消息，包含 MQTT 主题与载荷
      */
     @ServiceActivator(inputChannel = "mqttInboundChannel")
     public void handleInbound(Message<?> message) {

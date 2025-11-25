@@ -3,22 +3,23 @@ package com.sensor.entity;
 import java.util.Date;
 
 /**
- * 设备上传数据实体（匹配规范4.1：devices/data/upload主题的JSON格式）
+ * 设备上传数据实体（匹配规范4.1：devices/data/upload 主题的 JSON 格式）
+ * 字段名称与上报 JSON 保持一致，便于反序列化。
  */
 public class SensorUploadData {
-    // 规范4.1字段：设备序列号（device_id）
+    /** 设备序列号（device_id） */
     private String device_id;
-    // 规范4.1字段：溶解氧饱和度（saturation_percent）
+    /** 溶解氧饱和度（saturation_percent，%） */
     private Double saturation_percent;
-    // 规范4.1字段：溶解氧浓度（氧气值，单位mg/L，concentration_mgL）
+    /** 溶解氧浓度（concentration_mgL，mg/L） */
     private Double concentration_mgL;
-    // 规范4.1字段：温度（单位℃，temperature_c）
+    /** 水温（temperature_c，℃） */
     private Double temperature_c;
-    // 规范4.1字段：盐度（salinity_psu）
+    /** 盐度（salinity_psu，PSU） */
     private Double salinity_psu;
-    // 规范4.1字段：压力（pressure_kpa）
+    /** 压力（pressure_kpa，kPa） */
     private Double pressure_kpa;
-    // 扩展字段：数据接收时间（服务端记录用）
+    /** 扩展字段：服务端接收时间 */
     private Date receive_time;
 
     // Getter + Setter（严格对应JSON字段名，避免序列化/反序列化异常）
