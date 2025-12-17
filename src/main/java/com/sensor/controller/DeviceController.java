@@ -27,8 +27,12 @@ public class DeviceController {
     public static class ControlRequest {
         /** 设备ID（设备序列号） */
         public String deviceId;
-        /** 设备状态（1=启动；0=停止） */
-        public Integer deviceStatus;
+        /** 指令类型：start/close/add/dec */
+        public String deviceStatus;
+        /** 当前工作状态：working/stop */
+        public String work_status;
+        /** 单位秒，默认1 */
+        public Long second;
     }
 
     @Autowired
@@ -44,7 +48,7 @@ public class DeviceController {
     @PostMapping("/control")
     @Operation(summary = "手动控制设备开/停")
     public void control(@RequestBody ControlRequest req) {
-        deviceControlService.manualControl(req.deviceId, req.deviceStatus);
+        deviceControlService.manualControl(req.deviceId, req.deviceStatus, req.work_status, req.second);
     }
 
     /**

@@ -1,7 +1,6 @@
 package com.sensor.entity;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 /**
@@ -26,15 +25,15 @@ public class DeviceControlLog {
     private String deviceId;
 
     /**
-     * 设备状态（1=启动，0=停止）
+     * 设备状态（start/close/add/dec）
      */
-    @Column(name = "device_status", nullable = false, columnDefinition = "INT NOT NULL COMMENT '设备状态（1=启动，0=停止）'")
-    private Integer deviceStatus;
+    @Column(name = "device_status", nullable = false, columnDefinition = "VARCHAR(16) NOT NULL COMMENT '设备状态（start/close/add/dec）'")
+    private String deviceStatus;
 
     /**
      * 触发此指令的传感器数据日志ID
      */
-    @Column(name = "triggering_data_id", nullable = false, columnDefinition = "BIGINT NOT NULL COMMENT '触发此指令的传感器数据日志ID'")
+    @Column(name = "triggering_data_id", columnDefinition = "BIGINT NULL COMMENT '触发此指令的传感器数据日志ID'")
     private Long triggeringDataId;
 
     /**
@@ -68,11 +67,11 @@ public class DeviceControlLog {
         this.deviceId = deviceId;
     }
 
-    public Integer getDeviceStatus() {
+    public String getDeviceStatus() {
         return deviceStatus;
     }
 
-    public void setDeviceStatus(Integer deviceStatus) {
+    public void setDeviceStatus(String deviceStatus) {
         this.deviceStatus = deviceStatus;
     }
 

@@ -19,6 +19,10 @@ public class SensorUploadData {
     private Double salinity_psu;
     /** 压力（pressure_kpa，kPa） */
     private Double pressure_kpa;
+    /** 当前工作状态；值：working/stop */
+    private String work_status;
+    /** 工作时长，单位秒，默认值1 */
+    private Long start_time;
     /** 扩展字段：服务端接收时间 */
     private Date receive_time;
 
@@ -69,6 +73,22 @@ public class SensorUploadData {
 
     public void setPressure_kpa(Double pressure_kpa) {
         this.pressure_kpa = pressure_kpa;
+    }
+
+    public String getWork_status() {
+        return work_status;
+    }
+
+    public void setWork_status(String work_status) {
+        this.work_status = work_status;
+    }
+
+    public Long getStart_time() {
+        return start_time;
+    }
+
+    public void setStart_time(Long start_time) {
+        this.start_time = start_time;
     }
 
     public Date getReceive_time() {

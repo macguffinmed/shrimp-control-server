@@ -186,8 +186,8 @@ public class DeviceMgmtController {
     public static class Status {
         /** 是否在线（最近5分钟内有上报） */
         public boolean connected;
-        /** 最近一次开停状态（1=启动；0=停止） */
-        public Integer lastDeviceStatus;
+        /** 最近一次控制指令（start/close/add/dec） */
+        public String lastDeviceStatus;
         /** 最近上报时间 */
         public ZonedDateTime lastSeen;
     }

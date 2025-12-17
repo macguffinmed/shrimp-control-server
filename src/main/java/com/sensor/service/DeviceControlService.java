@@ -3,7 +3,6 @@ package com.sensor.service;
 import com.alibaba.fastjson.JSON;
 import com.sensor.entity.DeviceControlCommand;
 import com.sensor.entity.DeviceControlLog;
-import com.sensor.entity.SensorDataLog;
 import com.sensor.entity.SensorUploadData;
 import com.sensor.entity.Threshold;
 import com.sensor.repository.DeviceControlLogRepository;
@@ -13,14 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.support.GenericMessage;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 
 /**
  * 设备控制服务（基于阈值比对逻辑，发送开关指令，匹配规范3.2、4.2）
  */
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
@@ -71,9 +68,11 @@ public class DeviceControlService {
                     deviceId, currentOxy, threshold.getOxyMin(), threshold.getOxyMax());
         }
 
-        // 步骤2：生成控制指令（匹配规范4.2：device_status=1启动，0停止）
-        int deviceStatus = needStartDevice ? 1 : 0;
-        DeviceControlCommand controlMsg = new DeviceControlCommand(deviceId, deviceStatus);
+        // 步骤2：生成控制指令（device_status=start/close；并带 work_status 与 second）
+        String deviceStatus = needStartDevice ? "start" : "close";
+        Long second = normalizeSecond(sensorData.getStart_time());
+        String workStatus = normalizeWorkStatus(sensorData.getWork_status(), deviceStatus);
+        DeviceControlCommand controlMsg = new DeviceControlCommand(deviceId, deviceStatus, workStatus, second);
         String controlJson = JSON.toJSONString(controlMsg);
 
         // 步骤3：构建发布主题（规范3.2：devices/config/alarm）
@@ -83,15 +82,32 @@ public class DeviceControlService {
         sendControlMsg(publishTopic, controlJson, deviceStatus, deviceId, savedSensorDataLogId);
     }
 
+    private Long normalizeSecond(Long second) {
+        if (second == null || second <= 0) {
+            return 1L;
+        }
+        return second;
+    }
+
+    private String normalizeWorkStatus(String workStatus, String deviceStatus) {
+        if (workStatus != null && !workStatus.trim().isEmpty()) {
+            return workStatus;
+        }
+        if ("close".equalsIgnoreCase(deviceStatus)) {
+            return "stop";
+        }
+        return "working";
+    }
+
     /**
      * 发送设备控制指令到MQTT服务器
      * @param topic 发布主题（规范3.2）
      * @param controlJson 控制指令JSON（规范4.2）
-     * @param deviceStatus 设备状态（1=启动，0=停止）
+     * @param deviceStatus 设备状态（start/close/add/dec）
      * @param deviceId 设备ID
      * @param triggeringDataId 触发此命令的传感器数据日志ID
      */
-    private void sendControlMsg(String topic, String controlJson, int deviceStatus, String deviceId, Long triggeringDataId) {
+    private void sendControlMsg(String topic, String controlJson, String deviceStatus, String deviceId, Long triggeringDataId) {
         try {
             // 构建MQTT消息并设置发布主题（Spring Integration要求通过header传递mqtt_topic）
             Message<String> message = MessageBuilder
@@ -102,8 +118,8 @@ public class DeviceControlService {
             boolean sendSuccess = mqttOutboundChannel.send(message, 5000);
 
             if (sendSuccess) {
-                logger.info("设备控制指令发送成功：主题={}，指令={}（状态：{}）",
-                        topic, controlJson, deviceStatus == 1 ? "启动" : "停止");
+                logger.info("设备控制指令发送成功：主题={}，指令={}（device_status={}）",
+                        topic, controlJson, deviceStatus);
 
                 // 保存到数据库
                 DeviceControlLog controlLog = new DeviceControlLog();
@@ -126,12 +142,28 @@ public class DeviceControlService {
     /**
      * 手动控制入口：供前端直接触发设备开/停
      * @param deviceId 设备ID
-     * @param deviceStatus 1=启动，0=停止
+     * @param deviceStatus start/close/add/dec
+     * @param workStatus working/stop
+     * @param second 单位秒，默认1
      */
-    public void manualControl(String deviceId, int deviceStatus) {
-        DeviceControlCommand controlMsg = new DeviceControlCommand(deviceId, deviceStatus);
+    public void manualControl(String deviceId, String deviceStatus, String workStatus, Long second) {
+        String normalizedStatus = normalizeDeviceStatus(deviceStatus);
+        Long normalizedSecond = normalizeSecond(second);
+        String normalizedWorkStatus = normalizeWorkStatus(workStatus, normalizedStatus);
+        DeviceControlCommand controlMsg = new DeviceControlCommand(deviceId, normalizedStatus, normalizedWorkStatus, normalizedSecond);
         String controlJson = JSON.toJSONString(controlMsg);
         String publishTopic = publishTopicTemplate;
-        sendControlMsg(publishTopic, controlJson, deviceStatus, deviceId, null);
+        sendControlMsg(publishTopic, controlJson, normalizedStatus, deviceId, null);
+    }
+
+    private String normalizeDeviceStatus(String deviceStatus) {
+        if (deviceStatus == null) {
+            throw new IllegalArgumentException("deviceStatus is required");
+        }
+        String s = deviceStatus.trim().toLowerCase();
+        if ("start".equals(s) || "close".equals(s) || "add".equals(s) || "dec".equals(s)) {
+            return s;
+        }
+        throw new IllegalArgumentException("invalid deviceStatus: " + deviceStatus);
     }
 }
