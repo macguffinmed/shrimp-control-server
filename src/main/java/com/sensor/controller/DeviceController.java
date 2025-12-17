@@ -3,6 +3,8 @@ package com.sensor.controller;
 import com.sensor.entity.DeviceControlLog;
 import com.sensor.service.DeviceControlService;
 import com.sensor.repository.DeviceControlLogRepository;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,13 +27,16 @@ public class DeviceController {
      * 设备控制请求 DTO
      */
     public static class ControlRequest {
-        /** 设备ID（设备序列号） */
+        @Schema(description = "设备ID（设备序列号）", example = "TEMP001-OXY001", requiredMode = Schema.RequiredMode.REQUIRED)
         public String deviceId;
-        /** 指令类型：start/close/add/dec */
+
+        @Schema(description = "指令类型", allowableValues = {"start", "close", "add", "dec"}, example = "start", requiredMode = Schema.RequiredMode.REQUIRED)
         public String deviceStatus;
-        /** 当前工作状态：working/stop */
+
+        @Schema(name = "work_status", description = "当前工作状态", allowableValues = {"working", "stop"}, example = "working")
         public String work_status;
-        /** 单位秒，默认1 */
+
+        @Schema(description = "单位秒，默认1", example = "1")
         public Long second;
     }
 
@@ -42,12 +47,12 @@ public class DeviceController {
     private DeviceControlLogRepository deviceControlLogRepository;
 
     /**
-     * 手动控制设备开/停
-     * @param req 请求体：deviceId、deviceStatus（1=启动，0=停止）
+     * 手动调控设备
+     * @param req 请求体：deviceId、deviceStatus（start/close/add/dec）
      */
     @PostMapping("/control")
-    @Operation(summary = "手动控制设备开/停")
-    public void control(@RequestBody ControlRequest req) {
+    @Operation(summary = "手动调控设备（start/close/add/dec）")
+    public void control(@RequestBody(description = "手动调控指令", required = true) @org.springframework.web.bind.annotation.RequestBody ControlRequest req) {
         deviceControlService.manualControl(req.deviceId, req.deviceStatus, req.work_status, req.second);
     }
 

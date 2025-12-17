@@ -6,6 +6,7 @@ import com.sensor.entity.SensorDataLog;
 import com.sensor.repository.DeviceRepository;
 import com.sensor.repository.SensorDataLogRepository;
 import com.sensor.repository.DeviceControlLogRepository;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -184,11 +185,11 @@ public class DeviceMgmtController {
      * 设备状态 DTO
      */
     public static class Status {
-        /** 是否在线（最近5分钟内有上报） */
+        @Schema(description = "是否在线（最近5分钟内有上报）")
         public boolean connected;
-        /** 最近一次控制指令（start/close/add/dec） */
+        @Schema(description = "最近一次控制指令", allowableValues = {"start", "close", "add", "dec"})
         public String lastDeviceStatus;
-        /** 最近上报时间 */
+        @Schema(description = "最近上报时间")
         public ZonedDateTime lastSeen;
     }
 
