@@ -30,6 +30,7 @@ mqtt:
   subscribe:
     topic: devices/data/upload
   publish:
+    enabled: false
     topic:
       template: devices/config/alarm
   qos: 0

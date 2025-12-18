@@ -33,6 +33,9 @@ public class DeviceControlService {
     @Value("${mqtt.publish.topic.template}")
     private String publishTopicTemplate;
 
+    @Value("${mqtt.publish.enabled:true}")
+    private boolean publishEnabled;
+
     // 注入MQTT出站通道（发送控制指令）
     @Autowired
     private MessageChannel mqttOutboundChannel;
@@ -109,6 +112,11 @@ public class DeviceControlService {
      */
     private void sendControlMsg(String topic, String controlJson, String deviceStatus, String deviceId, Long triggeringDataId) {
         try {
+            if (!publishEnabled) {
+                logger.info("MQTT publish disabled, skip sending control message: topic={} deviceId={} device_status={}",
+                        topic, deviceId, deviceStatus);
+                return;
+            }
             // 构建MQTT消息并设置发布主题（Spring Integration要求通过header传递mqtt_topic）
             Message<String> message = MessageBuilder
                     .withPayload(controlJson)
