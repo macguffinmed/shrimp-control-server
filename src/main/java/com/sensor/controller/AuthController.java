@@ -134,4 +134,14 @@ public class AuthController {
         a.setPasswordHash(encoder.encode(req.newPassword));
         accountRepository.save(a);
     }
+
+    @PostMapping("/logout")
+    @Operation(summary = "退出登录")
+    public void logout(@RequestHeader(value = "Authorization", required = false) String auth) {
+        if (auth == null || auth.trim().isEmpty()) {
+            return;
+        }
+        String token = auth.startsWith("Bearer ") ? auth.substring(7) : auth;
+        jwtService.revoke(token);
+    }
 }
